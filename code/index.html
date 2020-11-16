@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .container {
+            display: flex;
+            flex-flow: column nowrap;
+            width: 600px;
+            height: 600px;
+            background: orange;
+            margin: auto;
+        }
+        
+        .header {
+            height: 100px;
+            line-height: 100px;
+            text-align: center;
+            font-size: 25px;
+            background: orangered;
+            border-bottom: 1px solid gray;
+        }
+        
+        .main {
+            display: flex;
+            flex-flow: column nowrap;
+            flex-grow: 1;
+            background: white;
+        }
+        
+        .main .item {
+            display: flex;
+            flex: 1;
+            align-items: center;
+            border-bottom: 1px solid gray;
+        }
+        
+        .main .item img {
+            width: 100px;
+            height: 50px;
+            margin-right: 80px;
+        }
+        
+        .main .item .name {
+            width: 120px;
+            left: 150px;
+            font-size: 16px;
+            margin-right: 50px;
+        }
+        
+        .main .item .number {
+            flex: 1;
+        }
+        
+        .main .item .number a {
+            display: inline-block;
+            text-decoration: none;
+            font-size: 20px;
+            text-align: center;
+            vertical-align: middle;
+            width: 30px;
+            background: gray;
+        }
+        
+        .main .item .number input {
+            width: 80px;
+        }
+        
+        .main .item .del {
+            width: 50px;
+        }
+        
+        .footer {
+            height: 80px;
+            text-align: right;
+            line-height: 80px;
+        }
+        
+        .footer button {
+            width: 80px;
+            height: 50px;
+            margin: 0 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <my-cart></my-cart>
+    </div>
+    <script src="../js/vue.js"></script>
+    <script>
+        var CartTitle = {
+            props: ['un'],
+            template: `
+            <div class="header">{{un}}的购物车</div>
+            `
+        };
+        var CartList = {
+            props: ['lists'],
+            template: `
+            <div class="main">
+                <div class="item" :key='item.id' v-for='item in lists'>
+                    <img :src="item.img">
+                    <div class="name">{{item.name+'/'+item.price}}</div>
+                    <div class="number">
+                        <a href="#" @click.prevent='reduce(item.id)'>-</a>
+                        <input type="text" :value='item.num'  @blur='changeNum(item.id,$event)'>
+                        <a href="#" @click.prevent='add(item.id)'>+</a>
+                    </div>
+                    <button class='del' @click='cartDel(item.id)'>删除</button>
+                </div>
+            </div>
+            `,
+            methods: {
+                changeNum: function(id, event) {
+                    this.$emit('change-num', {
+                        id: id,
+                        num: event.target.value,
+                        type: 'change'
+                    });
+                },
+                cartDel: function(val) {
+                    this.$emit('cart-del', val);
+                },
+                add: function(id) {
+                    this.$emit('change-num', {
+                        id: id,
+                        type: 'add'
+                    });
+                },
+                reduce: function(id) {
+                    this.$emit('change-num', {
+                        id: id,
+                        type: 'reduce'
+                    });
+                }
+            }
+        };
+        var CartTotal = {
+            props: ['lists'],
+            template: `
+            <div class="footer">
+                <span>总价: {{total}}</span>
+                <button>结算</button>
+            </div>
+            `,
+            computed: {
+                total: function() {
+                    var t = 0;
+                    this.lists.forEach(element => {
+                        t += element.price * element.num;
+                    });
+                    return t;
+                }
+            }
+        };
+        Vue.component('my-cart', {
+            data: function() {
+                return {
+                    uname: 'yyq',
+                    list: [{
+                        id: 1,
+                        name: '苹果手机',
+                        price: 8000,
+                        num: 1,
+                        img: '../images/iphone.png'
+                    }, {
+                        id: 2,
+                        name: '华为手机',
+                        price: 6000,
+                        num: 1,
+                        img: '../images/huawei.png'
+                    }, {
+                        id: 3,
+                        name: '小米手机',
+                        price: 4000,
+                        num: 1,
+                        img: '../images/xiaomi.png'
+                    }, {
+                        id: 4,
+                        name: 'oppo手机',
+                        price: 4000,
+                        num: 2,
+                        img: '../images/oppo.png'
+                    }]
+                }
+            },
+            template: `
+            <div class='container'>
+                <cart-title :un='uname'></cart-title>
+                <cart-list :lists='list' @cart-del='delCart($event)' @change-num='changeNum($event)' ></cart-list>
+                <cart-total :lists='list'></cart-total>
+            </div>
+            `,
+            components: {
+                'cart-title': CartTitle,
+                'cart-list': CartList,
+                'cart-total': CartTotal
+            },
+            methods: {
+                changeNum: function(val) {
+                    if (val.type == 'change') {
+                        this.list.some(item => {
+                            if (item.id == val.id) {
+                                item.num = val.num;
+                                return true;
+                            };
+                        });
+                    } else if (val.type == 'reduce') {
+                        this.list.some(item => {
+                            if (item.id == val.id && item.num > 0) {
+                                item.num -= 1;
+                                return true;
+                            };
+                        });
+                    } else {
+                        this.list.some(item => {
+                            if (item.id == val.id) {
+                                item.num += 1;
+                                return true;
+                            };
+                        });
+                    }
+
+                },
+                delCart: function(val) {
+                    // 根据id删除list中对应的数据
+                    // 1.找到id所对应的数据的索引
+                    var index = this.list.findIndex(item => {
+                        return item.id == val;
+                    });
+                    // 2.根据索引删除对应的数据
+                    this.list.splice(index, 1);
+                }
+            }
+        });
+        var vm = new Vue({
+            el: '#app'
+        });
+    </script>
+</body>
+
+</html>
